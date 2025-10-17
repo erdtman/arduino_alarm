@@ -11,8 +11,11 @@ public:
   // Constructor
   Timer();
   
-  // Start the timer with a duration and callback
-  void start(unsigned long durationMs, TimerCallback callback);
+  // Set the callback function (call once in setup)
+  void onExpired(TimerCallback callback);
+  
+  // Start the timer with a duration
+  void start(unsigned long durationMs);
   
   // Stop/reset the timer
   void stop();

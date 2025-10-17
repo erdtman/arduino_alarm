@@ -8,8 +8,11 @@ Timer::Timer()
     callback(nullptr) {
 }
 
-void Timer::start(unsigned long durationMs, TimerCallback callback) {
+void Timer::onExpired(TimerCallback callback) {
   this->callback = callback;
+}
+
+void Timer::start(unsigned long durationMs) {
   startTime = millis();
   duration = durationMs;
   running = true;
@@ -32,7 +35,11 @@ void Timer::update() {
   if ((millis() - startTime) >= duration) {
     running = false;
     expired = true;
-    callback();
+    if (callback != nullptr) {
+      callback();
+    } else {
+      Serial.println("WARNING: Timer callback not set");
+    }
   }
 }
 

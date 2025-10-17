@@ -10,6 +10,7 @@ DigitMatrix digitMatrix;
 // Define patterns (static to persist)
 Pattern blinkPattern;
 Pattern countdownPattern;
+BuzzerPattern alarmBeepPattern;
 
 #define ROWS 4
 #define COLS 3
@@ -62,7 +63,7 @@ void handleKeyPress(char key) {
 
 // Callback implementations for AlarmStateMachine
 void onStartAlarmTimer(unsigned long duration) {
-  timer.start(duration, onTimerExpired);
+  timer.start(duration);
 }
 
 void onStopAlarmTimer() {
@@ -71,7 +72,7 @@ void onStopAlarmTimer() {
 
 void onAlarmTriggered() {
   // Called once when alarm is triggered
-  buzzer.on();
+  buzzer.playPattern(&alarmBeepPattern);
   digitMatrix.playPattern(&blinkPattern);
 }
 
@@ -83,11 +84,13 @@ void onDisarmed() {
 
 void onArming() {
   // Called when entering ARMING state
+  buzzer.playPattern(&alarmBeepPattern);
   digitMatrix.playPattern(&countdownPattern);
 }
 
 void onEntryDelay() {
   // Called when entering ENTRY_DELAY state
+  buzzer.blip(100);  // Blip to warn motion was detected
   digitMatrix.playPattern(&countdownPattern);
 }
 
@@ -98,12 +101,16 @@ void setup() {
   // Initialize display patterns
   blinkPattern = DigitMatrix::createBlinkPattern(200);     // Fast blink for alarm
   countdownPattern = DigitMatrix::createCountdownPattern(1000);  // 1 second per digit
+  
+  // Initialize buzzer pattern (on 100  ms, off 900 ms, 10 cycles)
+  alarmBeepPattern = Buzzer::createBeepPattern(100, 900, 10);
 
   digitMatrix.begin();
   keypad.begin();                               // Initialize keypad pins
   keypad.onKeyPress(handleKeyPress);            // Set keypad callback
   motionSensor.begin();                         // Initialize motion sensor pin
   motionSensor.onMotionStart(onMotionDetected); // Set motion detection callback
+  timer.onExpired(onTimerExpired);              // Set timer callback
 
   // Initialize alarm state machine with callbacks
   alarmSystem.begin();
@@ -135,6 +142,9 @@ void loop() {
 
   // Update digit matrix (for non-blocking blink pattern)
   digitMatrix.update();
+
+  // Update buzzer (for non-blocking buzzer patterns)
+  buzzer.update();
 
   // Small delay for stability
   delay(100);

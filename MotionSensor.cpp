@@ -23,6 +23,8 @@ void MotionSensor::update() {
     // Call the callback if one has been set
     if (_motionStartCallback != nullptr) {
       _motionStartCallback();
+    } else {
+      Serial.println("WARNING: MotionSensor callback not set");
     }
   }
   

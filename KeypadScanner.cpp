@@ -92,6 +92,8 @@ void KeypadScanner::update() {
         // New key pressed, call the callback
         if (callback != nullptr) {
             callback(currentKey);
+        } else {
+            Serial.println("WARNING: KeypadScanner callback not set");
         }
     }
     

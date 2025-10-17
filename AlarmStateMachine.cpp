@@ -25,26 +25,52 @@ void AlarmStateMachine::changeState(AlarmState newState) {
     currentState = newState;
 
     // Call appropriate callbacks when transitioning to states
-    if (newState == DISARMED && disarmedCallback) {
-        disarmedCallback();
-    } else if (newState == ARMING && armingCallback) {
-        armingCallback();
-    } else if (newState == ENTRY_DELAY && entryDelayCallback) {
-        entryDelayCallback();
-    } else if (newState == TRIGGERED && triggeredCallback) {
-        triggeredCallback();
+    if (newState == DISARMED) {
+        if (disarmedCallback) {
+            disarmedCallback();
+        } else {
+            Serial.println("WARNING: disarmedCallback not set");
+        }
+    }
+    
+    if (newState == ARMING) {
+        if (armingCallback) {
+            armingCallback();
+        } else {
+            Serial.println("WARNING: armingCallback not set");
+        }
+    }
+    
+    if (newState == ENTRY_DELAY) {
+        if (entryDelayCallback) {
+            entryDelayCallback();
+        } else {
+            Serial.println("WARNING: entryDelayCallback not set");
+        }
+    }
+    
+    if (newState == TRIGGERED) {
+        if (triggeredCallback) {
+            triggeredCallback();
+        } else {
+            Serial.println("WARNING: triggeredCallback not set");
+        }
     }
 }
 
 void AlarmStateMachine::startTimer() {
     if (timerRequestCallback != nullptr) {
         timerRequestCallback(delayPeriod);
+    } else {
+        Serial.println("WARNING: timerRequestCallback not set");
     }
 }
 
 void AlarmStateMachine::stopTimer() {
     if (stopTimerCallback != nullptr) {
         stopTimerCallback();
+    } else {
+        Serial.println("WARNING: stopTimerCallback not set");
     }
 }
 
