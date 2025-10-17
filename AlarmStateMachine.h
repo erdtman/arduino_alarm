@@ -2,6 +2,7 @@
 #define ALARMSTATEMACHINE_H
 
 #include <Arduino.h>
+#include "Timer.h"
 
 // Alarm System States
 enum AlarmState {
@@ -13,8 +14,6 @@ enum AlarmState {
 };
 
 // Forward declarations for callback types
-typedef void (*TimerRequestCallback)(unsigned long duration);
-typedef void (*StopTimerCallback)();
 typedef void (*TriggeredCallback)();  // Called on every loop while TRIGGERED
 typedef void (*DisarmedCallback)();   // Called when transitioning to DISARMED
 typedef void (*ArmingCallback)();     // Called when transitioning to ARMING
@@ -31,14 +30,11 @@ public:
   // Event handlers
   void handleKeyPress(char key);
   void handleMotionDetected();
-  void handleTimerExpired();
 
   // Update method - call this in loop()
   void update();
 
   // Callback setters
-  void onTimerRequest(TimerRequestCallback callback) { timerRequestCallback = callback; }
-  void onStopTimer(StopTimerCallback callback) { stopTimerCallback = callback; }
   void onTriggered(TriggeredCallback callback) { triggeredCallback = callback; }
   void onDisarmed(DisarmedCallback callback) { disarmedCallback = callback; }
   void onArming(ArmingCallback callback) { armingCallback = callback; }
@@ -51,9 +47,10 @@ private:
   String correctPin;
   unsigned long delayPeriod;
 
+  // Internal timer
+  Timer timer;
+
   // Callbacks
-  TimerRequestCallback timerRequestCallback;
-  StopTimerCallback stopTimerCallback;
   TriggeredCallback triggeredCallback;
   DisarmedCallback disarmedCallback;
   ArmingCallback armingCallback;
@@ -64,6 +61,7 @@ private:
   void startTimer();
   void stopTimer();
   void clearPin();
+  void onTimerExpired();
   bool isPinCorrect() const { return enteredPin == correctPin; }
   void printStatus() const;
 };

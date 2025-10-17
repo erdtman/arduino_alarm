@@ -5,8 +5,7 @@ AlarmStateMachine::AlarmStateMachine(const String &pin, unsigned long delayMs)
       delayPeriod(delayMs),
       currentState(DISARMED),
       enteredPin(""),
-      timerRequestCallback(nullptr),
-      stopTimerCallback(nullptr),
+      timer(),
       triggeredCallback(nullptr),
       disarmedCallback(nullptr),
       armingCallback(nullptr),
@@ -17,6 +16,10 @@ AlarmStateMachine::AlarmStateMachine(const String &pin, unsigned long delayMs)
 void AlarmStateMachine::begin() {
     currentState = DISARMED;
     enteredPin = "";
+    
+    // Set up internal timer callback
+    timer.onExpired([this]() { this->onTimerExpired(); });
+    
     Serial.println("=== ALARM STATE MACHINE INITIALIZED ===");
     printStatus();
 }
@@ -59,18 +62,25 @@ void AlarmStateMachine::changeState(AlarmState newState) {
 }
 
 void AlarmStateMachine::startTimer() {
-    if (timerRequestCallback != nullptr) {
-        timerRequestCallback(delayPeriod);
-    } else {
-        Serial.println("WARNING: timerRequestCallback not set");
-    }
+    timer.start(delayPeriod);
 }
 
 void AlarmStateMachine::stopTimer() {
-    if (stopTimerCallback != nullptr) {
-        stopTimerCallback();
-    } else {
-        Serial.println("WARNING: stopTimerCallback not set");
+    timer.stop();
+}
+
+void AlarmStateMachine::onTimerExpired() {
+    if (currentState == ARMING) {
+        // Arming delay complete - transition to ARMED
+        changeState(ARMED);
+        clearPin();
+        Serial.println("System ARMED! Monitoring for motion...");
+        printStatus();
+    } else if (currentState == ENTRY_DELAY) {
+        // Entry delay expired - trigger alarm
+        changeState(TRIGGERED);
+        Serial.println("ALARM TRIGGERED!!!");
+        printStatus();
     }
 }
 
@@ -131,24 +141,9 @@ void AlarmStateMachine::handleMotionDetected() {
     }
 }
 
-void AlarmStateMachine::handleTimerExpired() {
-    if (currentState == ARMING) {
-        // Arming delay complete - transition to ARMED
-        changeState(ARMED);
-        clearPin();
-        Serial.println("System ARMED! Monitoring for motion...");
-        printStatus();
-    } else if (currentState == ENTRY_DELAY) {
-        // Entry delay expired - trigger alarm
-        changeState(TRIGGERED);
-        Serial.println("ALARM TRIGGERED!!!");
-        printStatus();
-    }
-}
-
 void AlarmStateMachine::update() {
-    // Update method can be used for continuous state behaviors if needed
-    // Currently no continuous behaviors required
+    // Update internal timer
+    timer.update();
 }
 
 void AlarmStateMachine::printStatus() const {

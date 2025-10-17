@@ -1,7 +1,6 @@
 #include "DigitMatrix.h"
 #include "KeypadScanner.h"
 #include "MotionSensor.h"
-#include "Timer.h"
 #include "AlarmStateMachine.h"
 #include "Buzzer.h"
 
@@ -29,26 +28,15 @@ MotionSensor motionSensor(PIR_PIN);
 // Initialize Buzzer
 Buzzer buzzer(BUZZER_PIN);
 
-// Initialize Timer (single timer for all states)
-Timer timer;
-
-// Initialize AlarmStateMachine
+// Initialize AlarmStateMachine (now manages its own timer)
 AlarmStateMachine alarmSystem("1234", 10000);  // PIN: 1234, Delay: 10 seconds
 
 // Forward declarations for callbacks
-void onTimerExpired();
 void onMotionDetected();
-void onStartAlarmTimer(unsigned long duration);
-void onStopAlarmTimer();
 void onAlarmTriggered();
 void onDisarmed();
 void onArming();
 void onEntryDelay();
-
-// Timer callback function
-void onTimerExpired() {
-  alarmSystem.handleTimerExpired();
-}
 
 // Motion detection callback
 void onMotionDetected() {
@@ -62,14 +50,6 @@ void handleKeyPress(char key) {
 }
 
 // Callback implementations for AlarmStateMachine
-void onStartAlarmTimer(unsigned long duration) {
-  timer.start(duration);
-}
-
-void onStopAlarmTimer() {
-  timer.stop();
-}
-
 void onAlarmTriggered() {
   // Called once when alarm is triggered
   buzzer.playPattern(&alarmBeepPattern);
@@ -110,12 +90,9 @@ void setup() {
   keypad.onKeyPress(handleKeyPress);            // Set keypad callback
   motionSensor.begin();                         // Initialize motion sensor pin
   motionSensor.onMotionStart(onMotionDetected); // Set motion detection callback
-  timer.onExpired(onTimerExpired);              // Set timer callback
 
   // Initialize alarm state machine with callbacks
   alarmSystem.begin();
-  alarmSystem.onTimerRequest(onStartAlarmTimer);
-  alarmSystem.onStopTimer(onStopAlarmTimer);
   alarmSystem.onTriggered(onAlarmTriggered);
   alarmSystem.onDisarmed(onDisarmed);
   alarmSystem.onArming(onArming);
@@ -128,16 +105,13 @@ void setup() {
 }
 
 void loop() {
-  // Update timer (will call callback if timer expires)
-  timer.update();
-
   // Update motion sensor (will call callback if motion starts)
   motionSensor.update();
 
   // Update keypad (will call callback if key is pressed)
   keypad.update();
 
-  // Update alarm state machine (will call onAlarmTriggered if in TRIGGERED state)
+  // Update alarm state machine (includes internal timer update)
   alarmSystem.update();
 
   // Update digit matrix (for non-blocking blink pattern)
